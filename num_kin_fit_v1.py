@@ -11,6 +11,7 @@ from scipy.integrate import odeint
 from tkinter import filedialog
 from lmfit import Model, Parameters, minimize, fit_report
 import matplotlib.backends.backend_tkagg
+from datetime import datetime
 
 root=Tk()
 
@@ -79,16 +80,16 @@ def model_exp_callback():
     t=np.linspace(float(time_start_entry.get()),float(step_size_entry.get()),int(step_num_entry.get()))
     
     rxn_list=rxn_textbox.get("1.0","end-1c")
-    rxn_list=rxn_list.split('\n')
-    R=[]*len(rxn_list)
-    for i in range(len(rxn_list)):
-        R_i=rxn_list[i].split()
+    rxn_list_split=rxn_list.split('\n')
+    R=[]*len(rxn_list_split)
+    for i in range(len(rxn_list_split)):
+        R_i=rxn_list_split[i].split()
         R.append(R_i)
     
     species_list=species_entry.get()
     S=species_list.split(':')
     
-        
+    
     def rxn(Conc,t):        
         #Dictionary for assigning species strings to concentrations 
         conc_dict={}
@@ -190,6 +191,21 @@ def model_exp_callback():
     plt.show()
     print('Success!')
     
+    
+    #saving model results and log   
+    response = messagebox.askquestion('Save?','Do you want to save file?')
+    if response == 'yes':
+        fname=simpledialog.askstring('Filename', 'Please enter filename')
+        np.savetxt(fname+'.txt', np.column_stack((t,Conc)), delimiter="\t", fmt='%s')
+        
+        log_file='Successful run at '+str(datetime.now())+'\n'
+        log_file=log_file+'\n'+'Reaction Model\n'+rxn_list+'\n'
+        log_file=log_file+'Reactions Species\n'+species_entry.get()+'\n'
+        log_file=log_file+'Initial Concentrations\n'+conc_entry.get()+'\n'
+        log_file=log_file+'Rate Coefficient Values\n'+initial_params_entry.get()
+        f = open(fname+'_log.txt', 'w')
+        f.write(log_file) 
+    
 def fit_callback():
     
     exp=measured_species_entry.get()
@@ -217,10 +233,10 @@ def fit_callback():
     
     #Reaction Model and Species from user input    
     rxn_list=rxn_textbox.get("1.0","end-1c")
-    rxn_list=rxn_list.split('\n')
-    R=[]*len(rxn_list)
-    for i in range(len(rxn_list)):
-        R_i=rxn_list[i].split()
+    rxn_list_split=rxn_list.split('\n')
+    R=[]*len(rxn_list_split)
+    for i in range(len(rxn_list_split)):
+        R_i=rxn_list_split[i].split()
         R.append(R_i)
     
     #List of species from user input
@@ -309,7 +325,6 @@ def fit_callback():
             return Sdt_eval        
             
         Conc=odeint(rxn,C0,t)
-        print('Success')
     
         residual=[]*len(S_m)
         for i in range(len(S_m)):
@@ -318,11 +333,9 @@ def fit_callback():
     
 
     out = minimize(rxn_fit, params, args=(t, sig_dic), method='leastsq')
+    print('Success!')
     print(fit_report(out.params)) 
-#    Label(root, text="Fitted Parameters").grid(row=0,column=2,padx=5,pady=5)
-#    fit_params=Text(root, width=30, height=10, padx=5)
-#    fit_params.insert(fit_report(out.params))
-#    fit_params.grid(row=0,column=3,columnspan=5,padx=5,pady=5)
+
 
     #Modelled concentration with optimized parameters
     def rxn_final(Conc,t):  
@@ -393,6 +406,24 @@ def fit_callback():
         plt.legend()
     del i 
     plt.show()
+    
+    
+    #saving model results and log   
+    response = messagebox.askquestion('Save?','Do you want to save file?')
+    if response == 'yes':
+        fname=simpledialog.askstring('Filename', 'Please enter filename')
+        np.savetxt(fname+'.txt', np.column_stack((t,Conc)), delimiter="\t", fmt='%s')
+        
+        log_file='Successful run at '+str(datetime.now())+'\n'
+        log_file=log_file+'\n'+'Reaction Model\n'+rxn_list+'\n'
+        log_file=log_file+'Reactions Species\n'+species_entry.get()+'\n'
+        log_file=log_file+'Initial Concentrations\n'+conc_entry.get()+'\n'
+        log_file=log_file+'Inital Rate Coefficient Values\n'+initial_params_entry.get()+'\n'
+        log_file=log_file+'Min Rate Coefficient Values\n'+min_params_entry.get()+'\n'
+        log_file=log_file+'Max Rate Coefficient Values\n'+max_params_entry.get()+'\n'
+        log_file=log_file+'\n'+'Fit Result'+'\n'+str(fit_report(out.params))
+        f = open(fname+'_log.txt', 'w')
+        f.write(log_file) 
     
 file_button=Button(root,text='Fit',command=fit_callback)
 file_button.config(height=3,width=15)
