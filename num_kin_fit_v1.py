@@ -190,9 +190,213 @@ def model_exp_callback():
     plt.show()
     print('Success!')
     
-#file_button=Button(root,text='Fit',command=fit_callback)
-#file_button.config(height=3,width=15)
-#file_button.grid(row=11,column=4)
+def fit_callback():
+    
+    exp=measured_species_entry.get()
+    S_m=exp.split(':')
+    
+    if exp == 'None':
+        print('Give Measured Species labels')
+        return
+    del exp
+    
+    #Experimental data input
+    root.filename=filedialog.askopenfilename(initialdir='/Documents/Python', title='Select a file')
+    data=np.genfromtxt(root.filename)
+    
+    #Experimental time measurement
+    t=data[:,0]
+    C0=conc_entry.get()
+    C0=[float(x) for x in C0.split(':')]
+
+    #dictionatory for measured signals
+    sig_dic={}    
+    for i in range(len(S_m)):
+        sig_dic[S_m[i]]=data[:,i+1]
+
+    
+    #Reaction Model and Species from user input    
+    rxn_list=rxn_textbox.get("1.0","end-1c")
+    rxn_list=rxn_list.split('\n')
+    R=[]*len(rxn_list)
+    for i in range(len(rxn_list)):
+        R_i=rxn_list[i].split()
+        R.append(R_i)
+    
+    #List of species from user input
+    species_list=species_entry.get()
+    S=species_list.split(':')
+
+    #Packing Parameters for lmfit module
+    initial_params=initial_params_entry.get()
+    initial_params=initial_params.split(':')
+    initial_params=[float(x) for x in initial_params] 
+    min_params=min_params_entry.get()
+    min_params=min_params.split(':')
+    min_params=[float(x) for x in min_params]
+    max_params=max_params_entry.get()
+    max_params=max_params.split(':')
+    max_params=[float(x) for x in max_params]
+    
+    #vary or fix parameters?
+    vv=[]*len(max_params)
+    for tt in range(len(min_params)):
+        if min_params[tt]==max_params[tt]:
+            vv.append('false')
+        else:
+            vv.append('true')
+    del tt
+   
+    #Name list of the parameter from reaction model input
+    params_names=[]*len(R)
+    for l in range(len(R)):
+        params_names.append(R[l][len(R[l])-1])
+    del l
+
+    params = Parameters()
+    for p in range(len(params_names)):
+        if vv[p]=='true':
+            params.add(str(params_names[p]), value=initial_params[p], min=min_params[p], max=max_params[p])
+        elif vv[p]=='false':
+            params.add(str(params_names[p]), value=initial_params[p], vary=False)
+    
+        
+    def rxn_fit(params,t,sig_dic):
+        
+        
+        def rxn(Conc,t):  
+            
+            #Relating params values to rate coefficient labels in the model   
+            params_dict={}
+            for k in range(len(params)):
+                params_dict[params_names[k]]=params[params_names[k]]
+            for key,val in params_dict.items():
+                exec(key + '=val')
+            
+            #Relating Conc values to S labels in the model        
+            conc_dict={}
+            for i in range(len(S)):
+                conc_dict[S[i]]=Conc[i]
+            for key,val in conc_dict.items():
+                exec(key + '=val')
+    
+            #Rate expression for reactants for all reactions
+            R_A=[]*len(R)
+            for i in range(len(R)):
+                R_A_i=[]*(len(R[i][0:R[i].index('=')])-R[i][0:R[i].index('=')].count('+')+1) #list for reaction species and k
+                R_A_i.append(R[i][len(R[i])-1])
+                for j in range(len(R[i][0:R[i].index('=')])-R[i][0:R[i].index('=')].count('+')):
+                    R_A_i.append('*'+R[i][j+j])
+                R_A.append(''.join(R_A_i))
+     
+            #Combination of rate expression to give ode for all species           
+            Sdt=[]*len(S)     
+            for j in range(len(S)):
+                Sdt_R=[]*len(R)
+                for k in range(len(R)):
+                    if S[j] not in R[k]:
+                        continue
+                    for l in range(len(R[k])):
+                        if R[k][l]==S[j] and l < R[k].index('='):
+                            Sdt_R.append('-'+R_A[k])
+                        elif R[k][l]==S[j] and l > R[k].index('='):
+                            Sdt_R.append('+'+R_A[k])
+                Sdt.append(Sdt_R)                               
+            Sdt = [''.join(x) for x in Sdt]
+            Sdt_eval=[]*len(Sdt)
+            for x in range(len(Sdt)):
+                Sdt_eval.append(eval(Sdt[x]))
+            return Sdt_eval        
+            
+        Conc=odeint(rxn,C0,t)
+        print('Success')
+    
+        residual=[]*len(S_m)
+        for i in range(len(S_m)):
+            residual.append(Conc[:,S.index(S_m[i])]-sig_dic[S_m[i]])
+        return residual
+    
+
+    out = minimize(rxn_fit, params, args=(t, sig_dic), method='leastsq')
+    print(fit_report(out.params)) 
+#    Label(root, text="Fitted Parameters").grid(row=0,column=2,padx=5,pady=5)
+#    fit_params=Text(root, width=30, height=10, padx=5)
+#    fit_params.insert(fit_report(out.params))
+#    fit_params.grid(row=0,column=3,columnspan=5,padx=5,pady=5)
+
+    #Modelled concentration with optimized parameters
+    def rxn_final(Conc,t):  
+        
+        #Relating Conc values to S labels in the model        
+        conc_dict={}
+        for i in range(len(S)):
+            conc_dict[S[i]]=Conc[i]
+        for key,val in conc_dict.items():
+            exec(key + '=val')
+            
+     
+        #Relating params values to rate coefficient labels in the model    
+        out_params_dict={}
+        for k in range(len(out.params)):
+            out_params_dict[params_names[k]]=out.params[params_names[k]].value
+        for key,val in out_params_dict.items():
+            exec(key + '=val')
+    
+        #Rate expression for reactants for all reactions
+        R_A=[]*len(R)
+        for i in range(len(R)):
+            if R[i].index('=') == 3:
+                AA=R[i][len(R[i])-1]+str('*')+R[i][0]+str('*')+R[i][2]
+            elif R[i].index('=') == 1:
+                AA=R[i][len(R[i])-1]+str('*')+R[i][0]
+            R_A.append(AA)
+     
+        #Combination of rate expression to give ode for all species           
+        Sdt=[]*len(S)     
+        for j in range(len(S)):
+            Sdt_R=[]*len(R)
+            for k in range(len(R)):
+                if S[j] not in R[k]:
+                    continue
+                for l in range(len(R[k])):
+                    if R[k][l]==S[j] and l < R[k].index('='):
+                        Sdt_R.append('-'+R_A[k])
+                    elif R[k][l]==S[j] and l > R[k].index('='):
+                        Sdt_R.append('+'+R_A[k])
+            Sdt.append(Sdt_R)                               
+        Sdt = [''.join(x) for x in Sdt]
+        Sdt_eval=[]*len(Sdt)
+        for x in range(len(Sdt)):
+            Sdt_eval.append(eval(Sdt[x]))
+        return Sdt_eval        
+        
+    Conc=odeint(rxn_final,C0,t)
+    
+
+    #Plotting modelled and exp data       
+    plot_S=plot_species_entry.get()
+    plot_S=plot_S.split(':')
+    plot_S_num=[S.index(x) for x in plot_S]
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    for i in range(len(plot_S)):
+        ax.plot(t,Conc[:,plot_S_num[i]],label=plot_S[i])
+        plt.ylabel('[Concentration] (Unit)',fontsize=15)
+        plt.xlabel('Time (s)',fontsize=15)
+        plt.legend()
+    del i    
+    for i in range(len(S_m)):
+        ax.plot(t,sig_dic[S_m[i]],label='Fit '+S_m[i])
+        plt.ylabel('[Concentration] (Unit)',fontsize=15)
+        plt.xlabel('Time (s)',fontsize=15)
+        plt.legend()
+    del i 
+    plt.show()
+    
+file_button=Button(root,text='Fit',command=fit_callback)
+file_button.config(height=3,width=15)
+file_button.grid(row=11,column=4)
 
 model_exp_button=Button(root,text='Model',command=model_exp_callback)
 model_exp_button.config(height=3,width=15)
