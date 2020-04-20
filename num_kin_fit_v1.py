@@ -26,56 +26,66 @@ species_entry=Entry(root)
 species_entry.insert(0,'A:B:C:D')
 species_entry.grid(row=5,column=1,padx=5)
 
-Label(root, text="Initial Concentrations").grid(row=6,column=0,padx=5,pady=5)
-conc_entry=Entry(root)
-conc_entry.insert(0,'1E12:1E12:0:0')
-conc_entry.grid(row=6,column=1,padx=5)
+Label(root, text="Initial Concentrations, C0").grid(row=6,column=0,padx=5,pady=5)
+initial_C0_params_entry=Entry(root)
+initial_C0_params_entry.insert(0,'1E12:1E12:0:0')
+initial_C0_params_entry.grid(row=6,column=1,padx=5)
 
-Label(root, text="Time Start").grid(row=7,column=0,padx=5,pady=5)
+Label(root, text="Initial Rate Coefficients, k").grid(row=7,column=0,padx=5,pady=5)
+initial_k_params_entry=Entry(root)
+initial_k_params_entry.insert(0,'1E-11:1E-11')
+initial_k_params_entry.grid(row=7,column=1,padx=5)
+
+Label(root, text="Time Start").grid(row=8,column=0,padx=5,pady=5)
 time_start_entry=Entry(root)
 time_start_entry.insert(0, '0')
-time_start_entry.grid(row=7,column=1,padx=5)
+time_start_entry.grid(row=8,column=1,padx=5)
 
-Label(root, text="Time Step Size").grid(row=8,column=0,padx=5,pady=5)
+Label(root, text="Time Stop").grid(row=9,column=0,padx=5,pady=5)
 step_size_entry=Entry(root)
 step_size_entry.insert(0, '0.01')
-step_size_entry.grid(row=8,column=1,padx=5)
+step_size_entry.grid(row=9,column=1,padx=5)
 #
-Label(root, text="Number of Steps").grid(row=9,column=0,padx=5,pady=5)
+Label(root, text="Number of Steps").grid(row=10,column=0,padx=5,pady=5)
 step_num_entry=Entry(root)
 step_num_entry.insert(0, '100')
-step_num_entry.grid(row=9,column=1,padx=5)
-
-Label(root, text="Species to Plot").grid(row=10,column=0,padx=5,pady=5)
-plot_species_entry=Entry(root)
-plot_species_entry.insert(0,'A:B:C:D')
-plot_species_entry.grid(row=10,column=1,padx=5)
+step_num_entry.grid(row=10,column=1,padx=5)
 
 Label(root, text="Measured Species").grid(row=5,column=3,padx=5,pady=5)
 measured_species_entry=Entry(root)
 measured_species_entry.insert(0,'None')
 measured_species_entry.grid(row=5,column=4,padx=5)
 
-Label(root, text="Initial k").grid(row=6,column=3,padx=5,pady=5)
-initial_params_entry=Entry(root)
-initial_params_entry.insert(0,'1E-11:1E-11')
-initial_params_entry.grid(row=6,column=4,padx=5)
+Label(root, text="C0 min -Fit").grid(row=6,column=3,padx=5,pady=5)
+min_C0_params_entry=Entry(root)
+min_C0_params_entry.insert(0,'1E12:1E12:0:0')
+min_C0_params_entry.grid(row=6,column=4,padx=5)
 
-Label(root, text="k min -Fit").grid(row=7,column=3,padx=5,pady=5)
-min_params_entry=Entry(root)
-min_params_entry.insert(0,'1E-11:1E-11')
-min_params_entry.grid(row=7,column=4,padx=5)
+Label(root, text="C0 max -Fit").grid(row=7,column=3,padx=5,pady=5)
+max_C0_params_entry=Entry(root)
+max_C0_params_entry.insert(0,'1E12:1E12:0:0')
+max_C0_params_entry.grid(row=7,column=4,padx=5)
 
-Label(root, text="k max -Fit").grid(row=8,column=3,padx=5,pady=5)
-max_params_entry=Entry(root)
-max_params_entry.insert(0,'1E-11:1E-11')
-max_params_entry.grid(row=8,column=4,padx=5)
+Label(root, text="k min -Fit").grid(row=8,column=3,padx=5,pady=5)
+min_k_params_entry=Entry(root)
+min_k_params_entry.insert(0,'1E-11:1E-11')
+min_k_params_entry.grid(row=8,column=4,padx=5)
+
+Label(root, text="k max -Fit").grid(row=9,column=3,padx=5,pady=5)
+max_k_params_entry=Entry(root)
+max_k_params_entry.insert(0,'1E-11:1E-11')
+max_k_params_entry.grid(row=9,column=4,padx=5)
+
+Label(root, text="Species to Plot").grid(row=10,column=3,padx=5,pady=5)
+plot_species_entry=Entry(root)
+plot_species_entry.insert(0,'A:B:C:D')
+plot_species_entry.grid(row=10,column=4,padx=5)
 
     
 def model_exp_callback():
-    C0=conc_entry.get()
-    C0=C0.split(':')  
-    C0=[float(x) for x in C0]
+
+    initial_C0_params=initial_C0_params_entry.get()
+    initial_C0_params=[float(x) for x in initial_C0_params.split(':')]
 
     t=np.linspace(float(time_start_entry.get()),float(step_size_entry.get()),int(step_num_entry.get()))
     
@@ -99,15 +109,15 @@ def model_exp_callback():
             exec(key + '=val')
         
         #Dictionary for assigning parameter strings to parameter values         
-        initial_params=initial_params_entry.get()
-        initial_params=initial_params.split(':')
-        initial_params=[float(x) for x in initial_params]
+        initial_k_params=initial_k_params_entry.get()
+        initial_k_params=initial_k_params.split(':')
+        initial_k_params=[float(x) for x in initial_k_params]
         params=[]*len(R)
         for j in range(len(R)):
             params.append(R[j][len(R[j])-1])
         params_dict={}
         for k in range(len(params)):
-            params_dict[params[k]]=initial_params[k]
+            params_dict[params[k]]=initial_k_params[k]
         for key,val in params_dict.items():
             exec(key + '=val')
 
@@ -149,7 +159,7 @@ def model_exp_callback():
             Sdt_eval.append(eval(Sdt[x]))
         return Sdt_eval        
         
-    Conc=odeint(rxn,C0,t)
+    Conc=odeint(rxn,initial_C0_params,t)
     
 #    Simulating noisy signal 
 #    noise1 = np.random.normal(0, 1E10, len(Conc[:,0]))
@@ -222,8 +232,7 @@ def fit_callback():
     
     #Experimental time measurement
     t=data[:,0]
-    C0=conc_entry.get()
-    C0=[float(x) for x in C0.split(':')]
+
 
     #dictionatory for measured signals
     sig_dic={}    
@@ -244,39 +253,69 @@ def fit_callback():
     S=species_list.split(':')
 
     #Packing Parameters for lmfit module
-    initial_params=initial_params_entry.get()
-    initial_params=initial_params.split(':')
-    initial_params=[float(x) for x in initial_params] 
-    min_params=min_params_entry.get()
-    min_params=min_params.split(':')
-    min_params=[float(x) for x in min_params]
-    max_params=max_params_entry.get()
-    max_params=max_params.split(':')
-    max_params=[float(x) for x in max_params]
+    initial_k_params=initial_k_params_entry.get()
+    initial_k_params=initial_k_params.split(':')
+    initial_k_params=[float(x) for x in initial_k_params] 
+    min_k_params=min_k_params_entry.get()
+    min_k_params=min_k_params.split(':')
+    min_k_params=[float(x) for x in min_k_params]
+    max_k_params=max_k_params_entry.get()
+    max_k_params=max_k_params.split(':')
+    max_k_params=[float(x) for x in max_k_params]
+    
+    initial_C0_params=initial_C0_params_entry.get()
+    initial_C0_params=initial_C0_params.split(':')
+    initial_C0_params=[float(x) for x in initial_C0_params]
+    min_C0_params=min_C0_params_entry.get()
+    min_C0_params=min_C0_params.split(':')
+    min_C0_params=[float(x) for x in min_C0_params]
+    max_C0_params=max_C0_params_entry.get()
+    max_C0_params=max_C0_params.split(':')
+    max_C0_params=[float(x) for x in max_C0_params]
+    
     
     #vary or fix parameters?
-    vv=[]*len(max_params)
-    for tt in range(len(min_params)):
-        if min_params[tt]==max_params[tt]:
-            vv.append('false')
+    kk=[]*len(max_k_params)
+    for tt in range(len(min_k_params)):
+        if min_k_params[tt]==max_k_params[tt]:
+            kk.append('false')
         else:
-            vv.append('true')
+            kk.append('true')
+    del tt
+    
+    cc=[]*len(max_C0_params)
+    for tt in range(len(min_C0_params)):
+        if min_C0_params[tt]==max_C0_params[tt]:
+            cc.append('false')
+        else:
+            cc.append('true')
     del tt
    
-    #Name list of the parameter from reaction model input
+    #Collection of rate and concentration parameter from reaction model input for fitting
+    params = Parameters()
     params_names=[]*len(R)
     for l in range(len(R)):
         params_names.append(R[l][len(R[l])-1])
     del l
 
-    params = Parameters()
     for p in range(len(params_names)):
-        if vv[p]=='true':
-            params.add(str(params_names[p]), value=initial_params[p], min=min_params[p], max=max_params[p])
-        elif vv[p]=='false':
-            params.add(str(params_names[p]), value=initial_params[p], vary=False)
+        if kk[p]=='true':
+            params.add(str(params_names[p]), value=initial_k_params[p], min=min_k_params[p], max=max_k_params[p])
+        elif kk[p]=='false':
+            params.add(str(params_names[p]), value=initial_k_params[p], vary=False)
+    del p
     
-        
+    species_names=species_entry.get()
+    species_names=species_names.split(':')
+    species_names=[s+'0' for s in species_names]
+    
+    for p in range(len(species_names)):
+        if cc[p]=='true':
+            params.add(species_names[p], value=initial_C0_params[p], min=min_C0_params[p], max=max_C0_params[p])
+        elif cc[p]=='false':
+            params.add(species_names[p], value=initial_C0_params[p], vary=False)
+    del p
+    
     def rxn_fit(params,t,sig_dic):
         
         
@@ -284,7 +323,7 @@ def fit_callback():
             
             #Relating params values to rate coefficient labels in the model   
             params_dict={}
-            for k in range(len(params)):
+            for k in range(len(params_names)):
                 params_dict[params_names[k]]=params[params_names[k]]
             for key,val in params_dict.items():
                 exec(key + '=val')
@@ -322,7 +361,13 @@ def fit_callback():
             Sdt_eval=[]*len(Sdt)
             for x in range(len(Sdt)):
                 Sdt_eval.append(eval(Sdt[x]))
-            return Sdt_eval        
+            return Sdt_eval
+        
+        #list of initial concentration values for all the reaction species 
+        C0=[]*len(species_names)
+        for p in range(len(species_names)):
+            conc=params[species_names[p]]
+            C0.append(conc)
             
         Conc=odeint(rxn,C0,t)
     
@@ -335,7 +380,6 @@ def fit_callback():
     out = minimize(rxn_fit, params, args=(t, sig_dic), method='leastsq')
     print('Success!')
     print(fit_report(out.params)) 
-
 
     #Modelled concentration with optimized parameters
     def rxn_final(Conc,t):  
@@ -350,7 +394,7 @@ def fit_callback():
      
         #Relating params values to rate coefficient labels in the model    
         out_params_dict={}
-        for k in range(len(out.params)):
+        for k in range(len(params_names)):
             out_params_dict[params_names[k]]=out.params[params_names[k]].value
         for key,val in out_params_dict.items():
             exec(key + '=val')
@@ -381,7 +425,13 @@ def fit_callback():
         Sdt_eval=[]*len(Sdt)
         for x in range(len(Sdt)):
             Sdt_eval.append(eval(Sdt[x]))
-        return Sdt_eval        
+        return Sdt_eval   
+     
+    #list of initial concentration values for all the reaction species 
+    C0=[]*len(species_names)
+    for p in range(len(species_names)):
+        conc=out.params[species_names[p]].value 
+        C0.append(conc) 
         
     Conc=odeint(rxn_final,C0,t)
     
@@ -394,13 +444,13 @@ def fit_callback():
     fig = plt.figure()
     ax = fig.add_subplot(111)
     for i in range(len(plot_S)):
-        ax.plot(t,Conc[:,plot_S_num[i]],label=plot_S[i])
+        ax.plot(t,Conc[:,plot_S_num[i]],label='Fit Model '+plot_S[i])
         plt.ylabel('[Concentration] (Unit)',fontsize=15)
         plt.xlabel('Time (s)',fontsize=15)
         plt.legend()
     del i    
     for i in range(len(S_m)):
-        ax.plot(t,sig_dic[S_m[i]],label='Fit '+S_m[i])
+        ax.plot(t,sig_dic[S_m[i]],label='Exp '+S_m[i])
         plt.ylabel('[Concentration] (Unit)',fontsize=15)
         plt.xlabel('Time (s)',fontsize=15)
         plt.legend()
