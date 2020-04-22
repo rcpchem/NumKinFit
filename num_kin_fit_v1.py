@@ -17,23 +17,23 @@ root=Tk()
 
 Label(root, text="Reaction Model").grid(row=0,column=0,padx=5,pady=5)
 rxn_textbox=Text(root, width=30, height=10, padx=5)
-rxn_textbox.insert('1.0', 'A + A = C + D : k1\nA + B = D  : k2')
+rxn_textbox.insert('1.0', 'CH2OO + CH2OO = Product1 : k1\nCH2OO = Product2  : k2')
 rxn_textbox.grid(row=0,column=0,columnspan=5,padx=5,pady=5)
 #rxn=rxn_textbox.get("1.0","end-1c")
 
 Label(root, text="Reaction Species").grid(row=5,column=0,padx=5,pady=5)
 species_entry=Entry(root)
-species_entry.insert(0,'A:B:C:D')
+species_entry.insert(0,'CH2OO:Product1:Product2')
 species_entry.grid(row=5,column=1,padx=5)
 
 Label(root, text="Initial Concentrations, C0").grid(row=6,column=0,padx=5,pady=5)
 initial_C0_params_entry=Entry(root)
-initial_C0_params_entry.insert(0,'1E12:1E12:0:0')
+initial_C0_params_entry.insert(0,'1E12:0:0')
 initial_C0_params_entry.grid(row=6,column=1,padx=5)
 
 Label(root, text="Initial Rate Coefficients, k").grid(row=7,column=0,padx=5,pady=5)
 initial_k_params_entry=Entry(root)
-initial_k_params_entry.insert(0,'1E-11:1E-11')
+initial_k_params_entry.insert(0,'1E-10:50')
 initial_k_params_entry.grid(row=7,column=1,padx=5)
 
 Label(root, text="Time Start").grid(row=8,column=0,padx=5,pady=5)
@@ -58,27 +58,27 @@ measured_species_entry.grid(row=5,column=4,padx=5)
 
 Label(root, text="C0 min -Fit").grid(row=6,column=3,padx=5,pady=5)
 min_C0_params_entry=Entry(root)
-min_C0_params_entry.insert(0,'1E12:1E12:0:0')
+min_C0_params_entry.insert(0,'1E12:0:0')
 min_C0_params_entry.grid(row=6,column=4,padx=5)
 
 Label(root, text="C0 max -Fit").grid(row=7,column=3,padx=5,pady=5)
 max_C0_params_entry=Entry(root)
-max_C0_params_entry.insert(0,'1E12:1E12:0:0')
+max_C0_params_entry.insert(0,'1E13:0:0')
 max_C0_params_entry.grid(row=7,column=4,padx=5)
 
 Label(root, text="k min -Fit").grid(row=8,column=3,padx=5,pady=5)
 min_k_params_entry=Entry(root)
-min_k_params_entry.insert(0,'1E-11:1E-11')
+min_k_params_entry.insert(0,'1E-11:10')
 min_k_params_entry.grid(row=8,column=4,padx=5)
 
 Label(root, text="k max -Fit").grid(row=9,column=3,padx=5,pady=5)
 max_k_params_entry=Entry(root)
-max_k_params_entry.insert(0,'1E-11:1E-11')
+max_k_params_entry.insert(0,'1E-9:1000')
 max_k_params_entry.grid(row=9,column=4,padx=5)
 
 Label(root, text="Species to Plot").grid(row=10,column=3,padx=5,pady=5)
 plot_species_entry=Entry(root)
-plot_species_entry.insert(0,'A:B:C:D')
+plot_species_entry.insert(0,'CH2OO:Product1:Product2')
 plot_species_entry.grid(row=10,column=4,padx=5)
 
     
@@ -161,13 +161,6 @@ def model_exp_callback():
         
     Conc=odeint(rxn,initial_C0_params,t)
     
-#    Simulating noisy signal 
-#    noise1 = np.random.normal(0, 1E10, len(Conc[:,0]))
-#    noisy_sig1=Conc[:,0]+noise1
-#    noise2 = np.random.normal(0, 1E10, len(Conc[:,0]))
-#    noisy_sig2=Conc[:,2]+noise2
-#    np.savetxt("file_name.txt", np.column_stack((t,noisy_sig1,noisy_sig2)), delimiter="\t", fmt='%s')
-    
     plot_S=plot_species_entry.get()
     plot_S=plot_S.split(':')
     plot_S_num=[S.index(x) for x in plot_S]
@@ -188,13 +181,13 @@ def model_exp_callback():
         data=np.genfromtxt(root.filename)
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        for j in range(len(data[0,:])-1):
-            ax.plot(data[:,0],data[:,j+1],label='Exp '+exp_names[j])
+        for i in range(len(plot_S)):
+            ax.plot(t,Conc[:,plot_S_num[i]],label=plot_S[i])
             plt.ylabel('[Concentration] (Unit)',fontsize=15)
             plt.xlabel('Time (s)',fontsize=15)
             plt.legend()
-        for i in range(len(plot_S)):
-            ax.plot(t,Conc[:,plot_S_num[i]],label=plot_S[i])
+        for j in range(len(data[0,:])-1):
+            ax.plot(data[:,0],data[:,j+1],label='Exp '+exp_names[j])
             plt.ylabel('[Concentration] (Unit)',fontsize=15)
             plt.xlabel('Time (s)',fontsize=15)
             plt.legend()
@@ -211,8 +204,8 @@ def model_exp_callback():
         log_file='Successful run at '+str(datetime.now())+'\n'
         log_file=log_file+'\n'+'Reaction Model\n'+rxn_list+'\n'
         log_file=log_file+'Reactions Species\n'+species_entry.get()+'\n'
-        log_file=log_file+'Initial Concentrations\n'+conc_entry.get()+'\n'
-        log_file=log_file+'Rate Coefficient Values\n'+initial_params_entry.get()
+        log_file=log_file+'Initial Concentrations\n'+initial_C0_params_entry.get()+'\n'
+        log_file=log_file+'Rate Coefficient Values\n'+initial_k_params_entry.get()
         f = open(fname+'_log.txt', 'w')
         f.write(log_file) 
     
@@ -307,7 +300,7 @@ def fit_callback():
     
     species_names=species_entry.get()
     species_names=species_names.split(':')
-    species_names=[s+'0' for s in species_names]
+    species_names=['Initial_' + s for s in species_names]
     
     for p in range(len(species_names)):
         if cc[p]=='true':
@@ -432,8 +425,12 @@ def fit_callback():
     for p in range(len(species_names)):
         conc=out.params[species_names[p]].value 
         C0.append(conc) 
-        
-    Conc=odeint(rxn_final,C0,t)
+    
+
+
+    t1=np.linspace(np.min(t),np.max(t),np.int(step_num_entry.get())) 
+    
+    Conc=odeint(rxn_final,C0,t1)
     
 
     #Plotting modelled and exp data       
@@ -444,7 +441,7 @@ def fit_callback():
     fig = plt.figure()
     ax = fig.add_subplot(111)
     for i in range(len(plot_S)):
-        ax.plot(t,Conc[:,plot_S_num[i]],label='Fit Model '+plot_S[i])
+        ax.plot(t1,Conc[:,plot_S_num[i]],label='Fit Model '+plot_S[i])
         plt.ylabel('[Concentration] (Unit)',fontsize=15)
         plt.xlabel('Time (s)',fontsize=15)
         plt.legend()
@@ -462,15 +459,17 @@ def fit_callback():
     response = messagebox.askquestion('Save?','Do you want to save file?')
     if response == 'yes':
         fname=simpledialog.askstring('Filename', 'Please enter filename')
-        np.savetxt(fname+'.txt', np.column_stack((t,Conc)), delimiter="\t", fmt='%s')
+        np.savetxt(fname+'.txt', np.column_stack((t1,Conc)), delimiter="\t", fmt='%s')
         
         log_file='Successful run at '+str(datetime.now())+'\n'
         log_file=log_file+'\n'+'Reaction Model\n'+rxn_list+'\n'
         log_file=log_file+'Reactions Species\n'+species_entry.get()+'\n'
-        log_file=log_file+'Initial Concentrations\n'+conc_entry.get()+'\n'
-        log_file=log_file+'Inital Rate Coefficient Values\n'+initial_params_entry.get()+'\n'
-        log_file=log_file+'Min Rate Coefficient Values\n'+min_params_entry.get()+'\n'
-        log_file=log_file+'Max Rate Coefficient Values\n'+max_params_entry.get()+'\n'
+        log_file=log_file+'Initial Concentrations\n'+initial_C0_params_entry.get()+'\n'
+        log_file=log_file+'Inital Rate Coefficient Values\n'+initial_k_params_entry.get()+'\n'
+        log_file=log_file+'Min Initial Concentration Values\n'+min_C0_params_entry.get()+'\n'
+        log_file=log_file+'Max Initial Concentration Values\n'+max_C0_params_entry.get()+'\n'
+        log_file=log_file+'Min Rate Coefficient Values\n'+min_k_params_entry.get()+'\n'
+        log_file=log_file+'Max Rate Coefficient Values\n'+max_k_params_entry.get()+'\n'
         log_file=log_file+'\n'+'Fit Result'+'\n'+str(fit_report(out.params))
         f = open(fname+'_log.txt', 'w')
         f.write(log_file) 
