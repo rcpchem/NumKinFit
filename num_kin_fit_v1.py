@@ -1,7 +1,9 @@
 """
 Created on Mon Mar 23 15:51:39 2020
 
-@author: rc13564
+@author: Rabi Chhantyal-Pun
+email: rcpchem@gmail.com, rc13564@bristol.ac.uk
+Please use for only non-commerical use 
 """
 
 from tkinter import *
@@ -91,10 +93,10 @@ def model_exp_callback():
     
     rxn_list=rxn_textbox.get("1.0","end-1c")
     rxn_list_split=rxn_list.split('\n')
-    R=[]*len(rxn_list_split)
+    RRX=[]*len(rxn_list_split)
     for i in range(len(rxn_list_split)):
         R_i=rxn_list_split[i].split()
-        R.append(R_i)
+        RRX.append(R_i)
     
     species_list=species_entry.get()
     S=species_list.split(':')
@@ -112,9 +114,9 @@ def model_exp_callback():
         initial_k_params=initial_k_params_entry.get()
         initial_k_params=initial_k_params.split(':')
         initial_k_params=[float(x) for x in initial_k_params]
-        params=[]*len(R)
-        for j in range(len(R)):
-            params.append(R[j][len(R[j])-1])
+        params=[]*len(RRX)
+        for j in range(len(RRX)):
+            params.append(RRX[j][len(RRX[j])-1])
         params_dict={}
         for k in range(len(params)):
             params_dict[params[k]]=initial_k_params[k]
@@ -132,25 +134,25 @@ def model_exp_callback():
 #                AA=R[i][len(R[i])-1]+str('*')+R[i][0]
 #            R_A.append(AA)
         #Reactions of all molecularity
-        R_A=[]*len(R)
-        for i in range(len(R)):
-            R_A_i=[]*(len(R[i][0:R[i].index('=')])-R[i][0:R[i].index('=')].count('+')+1) #list for reaction species and k
-            R_A_i.append(R[i][len(R[i])-1])
-            for j in range(len(R[i][0:R[i].index('=')])-R[i][0:R[i].index('=')].count('+')):
-                R_A_i.append('*'+R[i][j+j])
+        R_A=[]*len(RRX)
+        for i in range(len(RRX)):
+            R_A_i=[]*(len(RRX[i][0:RRX[i].index('=')])-RRX[i][0:RRX[i].index('=')].count('+')+1) #list for reaction species and k
+            R_A_i.append(RRX[i][len(RRX[i])-1])
+            for j in range(len(RRX[i][0:RRX[i].index('=')])-RRX[i][0:RRX[i].index('=')].count('+')):
+                R_A_i.append('*'+RRX[i][j+j])
             R_A.append(''.join(R_A_i))
  
         #Combination of rate expression to give ode for all species           
         Sdt=[]*len(S)     
         for j in range(len(S)):
-            Sdt_R=[]*len(R)
-            for k in range(len(R)):
-                if S[j] not in R[k]:
+            Sdt_R=[]*len(RRX)
+            for k in range(len(RRX)):
+                if S[j] not in RRX[k]:
                     continue
-                for l in range(len(R[k])):
-                    if R[k][l]==S[j] and l < R[k].index('='):
+                for l in range(len(RRX[k])):
+                    if RRX[k][l]==S[j] and l < RRX[k].index('='):
                         Sdt_R.append('-'+R_A[k])
-                    elif R[k][l]==S[j] and l > R[k].index('='):
+                    elif RRX[k][l]==S[j] and l > RRX[k].index('='):
                         Sdt_R.append('+'+R_A[k])
             Sdt.append(Sdt_R)                               
         Sdt = [''.join(x) for x in Sdt]
@@ -236,10 +238,10 @@ def fit_callback():
     #Reaction Model and Species from user input    
     rxn_list=rxn_textbox.get("1.0","end-1c")
     rxn_list_split=rxn_list.split('\n')
-    R=[]*len(rxn_list_split)
+    RRX=[]*len(rxn_list_split)
     for i in range(len(rxn_list_split)):
         R_i=rxn_list_split[i].split()
-        R.append(R_i)
+        RRX.append(R_i)
     
     #List of species from user input
     species_list=species_entry.get()
@@ -286,9 +288,9 @@ def fit_callback():
    
     #Collection of rate and concentration parameter from reaction model input for fitting
     params = Parameters()
-    params_names=[]*len(R)
-    for l in range(len(R)):
-        params_names.append(R[l][len(R[l])-1])
+    params_names=[]*len(RRX)
+    for l in range(len(RRX)):
+        params_names.append(RRX[l][len(RRX[l])-1])
     del l
 
     for p in range(len(params_names)):
@@ -329,25 +331,25 @@ def fit_callback():
                 exec(key + '=val')
     
             #Rate expression for reactants for all reactions
-            R_A=[]*len(R)
-            for i in range(len(R)):
-                R_A_i=[]*(len(R[i][0:R[i].index('=')])-R[i][0:R[i].index('=')].count('+')+1) #list for reaction species and k
-                R_A_i.append(R[i][len(R[i])-1])
-                for j in range(len(R[i][0:R[i].index('=')])-R[i][0:R[i].index('=')].count('+')):
-                    R_A_i.append('*'+R[i][j+j])
+            R_A=[]*len(RRX)
+            for i in range(len(RRX)):
+                R_A_i=[]*(len(RRX[i][0:RRX[i].index('=')])-RRX[i][0:RRX[i].index('=')].count('+')+1) #list for reaction species and k
+                R_A_i.append(RRX[i][len(RRX[i])-1])
+                for j in range(len(RRX[i][0:RRX[i].index('=')])-RRX[i][0:RRX[i].index('=')].count('+')):
+                    R_A_i.append('*'+RRX[i][j+j])
                 R_A.append(''.join(R_A_i))
      
             #Combination of rate expression to give ode for all species           
             Sdt=[]*len(S)     
             for j in range(len(S)):
-                Sdt_R=[]*len(R)
-                for k in range(len(R)):
-                    if S[j] not in R[k]:
+                Sdt_R=[]*len(RRX)
+                for k in range(len(RRX)):
+                    if S[j] not in RRX[k]:
                         continue
-                    for l in range(len(R[k])):
-                        if R[k][l]==S[j] and l < R[k].index('='):
+                    for l in range(len(RRX[k])):
+                        if RRX[k][l]==S[j] and l < RRX[k].index('='):
                             Sdt_R.append('-'+R_A[k])
-                        elif R[k][l]==S[j] and l > R[k].index('='):
+                        elif RRX[k][l]==S[j] and l > RRX[k].index('='):
                             Sdt_R.append('+'+R_A[k])
                 Sdt.append(Sdt_R)                               
             Sdt = [''.join(x) for x in Sdt]
@@ -393,25 +395,25 @@ def fit_callback():
             exec(key + '=val')
     
         #Rate expression for reactants for all reactions
-        R_A=[]*len(R)
-        for i in range(len(R)):
-            if R[i].index('=') == 3:
-                AA=R[i][len(R[i])-1]+str('*')+R[i][0]+str('*')+R[i][2]
-            elif R[i].index('=') == 1:
-                AA=R[i][len(R[i])-1]+str('*')+R[i][0]
+        R_A=[]*len(RRX)
+        for i in range(len(RRX)):
+            if RRX[i].index('=') == 3:
+                AA=RRX[i][len(RRX[i])-1]+str('*')+RRX[i][0]+str('*')+RRX[i][2]
+            elif RRX[i].index('=') == 1:
+                AA=RRX[i][len(RRX[i])-1]+str('*')+RRX[i][0]
             R_A.append(AA)
      
         #Combination of rate expression to give ode for all species           
         Sdt=[]*len(S)     
         for j in range(len(S)):
-            Sdt_R=[]*len(R)
-            for k in range(len(R)):
-                if S[j] not in R[k]:
+            Sdt_R=[]*len(RRX)
+            for k in range(len(RRX)):
+                if S[j] not in RRX[k]:
                     continue
-                for l in range(len(R[k])):
-                    if R[k][l]==S[j] and l < R[k].index('='):
+                for l in range(len(RRX[k])):
+                    if RRX[k][l]==S[j] and l < RRX[k].index('='):
                         Sdt_R.append('-'+R_A[k])
-                    elif R[k][l]==S[j] and l > R[k].index('='):
+                    elif RRX[k][l]==S[j] and l > RRX[k].index('='):
                         Sdt_R.append('+'+R_A[k])
             Sdt.append(Sdt_R)                               
         Sdt = [''.join(x) for x in Sdt]
