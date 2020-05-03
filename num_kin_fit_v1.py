@@ -143,6 +143,7 @@ def model_exp_callback():
         log_file=log_file+'Rate Coefficient Values\n'+initial_k_params_entry.get()
         f = open(fname+'_log.txt', 'w')
         f.write(log_file) 
+        f.close()
     plt.show()
 
 
@@ -357,7 +358,8 @@ def fit_callback():
         log_file=log_file+'Max Rate Coefficient Values\n'+max_k_params_entry.get()+'\n'
         log_file=log_file+'\n'+'Fit Result'+'\n'+str(fit_report(out.params))
         f = open(fname+'_log.txt', 'w')
-        f.write(log_file) 
+        f.write(log_file)
+        f.close()
     plt.show()   
 
 root=Tk()
