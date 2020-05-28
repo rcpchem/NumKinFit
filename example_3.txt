@@ -1,0 +1,33 @@
+Reaction Model
+C2H4 + O3 = CI + X : k1
+X = C2H4 + O3 : k2
+CI = CH2OO : k3
+CI = HO2 : k4
+CI = OH : k5
+OH + C3H8 = RO2 : k6
+RO2 + RO2 = Prod1 : k7
+HO2 + HO2 = Prod2 : k8
+RO2 + HO2 = Prod3 : k9
+CH2OO + CH2OO = Prod4 : k10
+CH2OO = Prod4 : k11
+
+Reactions Species
+C2H4:O3:X:CI:CH2OO:
+HO2:OH:C3H8:RO2:Prod1:
+Prod2:Prod3:Prod4
+
+Initial Concentrations
+4.6E14:6E11:0:0:0:
+0:0:8.6E16:0:0:
+0:0:0
+
+Rate Coefficient Values
+1.6E-18:1E6:3.7E5:1.3E5:1.3E5:
+7.6E-12:3E-13:2.5E-12:1E-11:7.3E-11:
+1.1E-3
+
+Species to Plot
+C2H4:O3
+
+Time
+0:500:1000

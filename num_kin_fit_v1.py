@@ -52,6 +52,135 @@ def rxn_ode(RRX,SSX):
         Sdt.append(Sdt_R)                               
     Sdt = [''.join(x) for x in Sdt]
     return(Sdt)
+    
+    
+def box_model_callback():
+    
+    root.filename=filedialog.askopenfilename(initialdir='/Documents/Python', title='Select a file')
+    file = open(root.filename,mode='r')
+    all_of_it = file.read()
+    file.close()
+    
+    all_of_it=all_of_it.split('\n\n')
+    rxn_list=all_of_it[0]
+    species_list=all_of_it[1]
+    initial_C0_params=all_of_it[2]
+    initial_k_params=all_of_it[3]
+    plot_species_names=all_of_it[4]
+    time_int=all_of_it[5]
+    
+    rxn_list=rxn_list.split('\n')
+    del rxn_list[0]
+    '\n'.join(rxn_list)
+
+    
+    species_list=species_list.split('\n')
+    del species_list[0]
+    species_list=''.join(species_list)
+    SSX=species_list.split(':')
+    
+    initial_C0_params=initial_C0_params.split('\n')
+    del initial_C0_params[0]
+    initial_C0_params=''.join(initial_C0_params)
+    
+    initial_k_params=initial_k_params.split('\n')
+    del initial_k_params[0]
+    initial_k_params=''.join(initial_k_params)
+    initial_k_params=initial_k_params.split(':')
+    initial_k_params=[float(x) for x in initial_k_params]
+
+    initial_C0_params=[float(x) for x in initial_C0_params.split(':')]
+    
+    time_int=time_int.split('\n')
+    del time_int[0]
+    time_int=time_int[0]
+    time_int=time_int.split(':')
+    
+#    t=np.linspace(float(time_start_entry.get()),float(step_size_entry.get()),int(step_num_entry.get()))
+    t=np.linspace(float(time_int[0]),float(time_int[1]),int(time_int[2]))
+    
+    rxn_list_split=rxn_list
+    RRX=[]*len(rxn_list_split)
+    for i in range(len(rxn_list_split)):
+        R_i=rxn_list_split[i].split()
+        RRX.append(R_i)
+        
+    
+
+    def rxn(Conc,t):        
+        #Dictionary for assigning species strings to concentrations 
+        conc_dict={}
+        for i in range(len(SSX)):
+            conc_dict[SSX[i]]=Conc[i]
+        for key,val in conc_dict.items():
+            exec(key + '=val')
+        
+        #Dictionary for assigning parameter strings to parameter values         
+        params=[]*len(RRX)
+        for j in range(len(RRX)):
+            params.append(RRX[j][len(RRX[j])-1])
+        params_dict={}
+        for k in range(len(params)):
+            params_dict[params[k]]=initial_k_params[k]
+        for key,val in params_dict.items():
+            exec(key + '=val')
+
+        Sdt = rxn_ode(RRX,SSX)
+        Sdt_eval=[]*len(Sdt)
+        for x in range(len(Sdt)):
+            Sdt_eval.append(eval(Sdt[x]))
+        return Sdt_eval        
+        
+    Conc=odeint(rxn,initial_C0_params,t)
+    
+    plot_species_names=plot_species_names.split('\n')
+    del plot_species_names[0]
+    'n'.join(plot_species_names)
+#    plot_species_names=plot_species_names[0]
+    
+    plot_S=plot_species_names[0]
+#    print(plot_S)
+    
+#    plot_S=plot_species_entry.get()
+    plot_S=plot_S.split(':')
+    plot_S_num=[SSX.index(x) for x in plot_S]
+
+    #Plotting modelled and exp data 
+
+
+      
+    exp=measured_species_entry.get()
+    exp_names=exp.split(':')
+    if exp == 'None':
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        for i in range(len(plot_S)):
+            ax.plot(t,Conc[:,plot_S_num[i]],label=plot_S[i])
+            plt.ylabel('[Concentration] (Unit)',fontsize=15)
+            plt.xlabel('Time (s)',fontsize=15)
+            plt.legend()
+    else:
+        root.filename=filedialog.askopenfilename(initialdir='/Documents/Python', title='Select a file')
+        data=np.genfromtxt(root.filename)
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        for i in range(len(plot_S)):
+            ax.plot(t,Conc[:,plot_S_num[i]],label=plot_S[i])
+            plt.ylabel('[Concentration] (Unit)',fontsize=15)
+            plt.xlabel('Time (s)',fontsize=15)
+            plt.legend()
+        for j in range(len(data[0,:])-1):
+            ax.plot(data[:,0],data[:,j+1],label='Exp '+exp_names[j])
+            plt.ylabel('[Concentration] (Unit)',fontsize=15)
+            plt.xlabel('Time (s)',fontsize=15)
+            plt.legend()   
+    
+    #saving model results and log 
+    response = messagebox.askquestion('Save?','Do you want to save file?')
+    if response == 'yes':
+        fname=simpledialog.askstring('Filename', 'Please enter filename')
+        np.savetxt(fname+'.txt', np.column_stack((t,Conc)), delimiter="\t", fmt='%s')
+    plt.show()
 
 def model_exp_callback():
 
@@ -136,11 +265,12 @@ def model_exp_callback():
         fname=simpledialog.askstring('Filename', 'Please enter filename')
         np.savetxt(fname+'.txt', np.column_stack((t,Conc)), delimiter="\t", fmt='%s')
         
-        log_file='Successful run at '+str(datetime.now())+'\n'
-        log_file=log_file+'\n'+'Reaction Model\n'+rxn_list+'\n'
-        log_file=log_file+'Reactions Species\n'+species_entry.get()+'\n'
-        log_file=log_file+'Initial Concentrations\n'+initial_C0_params_entry.get()+'\n'
-        log_file=log_file+'Rate Coefficient Values\n'+initial_k_params_entry.get()
+        
+        log_file='Reaction Model\n'+rxn_list+'\n\n'
+        log_file=log_file+'Reactions Species\n'+species_entry.get()+'\n\n'
+        log_file=log_file+'Initial Concentrations\n'+initial_C0_params_entry.get()+'\n\n'
+        log_file=log_file+'Rate Coefficient Values\n'+initial_k_params_entry.get()+'\n\n'
+        log_file=log_file+'Successful run at '+str(datetime.now())
         f = open(fname+'_log.txt', 'w')
         f.write(log_file) 
         f.close()
@@ -438,6 +568,10 @@ file_button.grid(row=11,column=4)
 model_exp_button=Button(root,text='Model',command=model_exp_callback)
 model_exp_button.config(height=3,width=15)
 model_exp_button.grid(row=11,column=3)
+
+box_model_button=Button(root,text='Box Model',command=box_model_callback)
+box_model_button.config(height=3,width=15)
+box_model_button.grid(row=11,column=1)
 
 quit_button=Button(root, text="Quit", command=root.destroy)
 quit_button.config(height=3,width=15)
