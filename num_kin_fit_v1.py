@@ -16,6 +16,8 @@ from tkinter import filedialog
 from lmfit import Model, Parameters, minimize, fit_report
 import matplotlib.backends.backend_tkagg
 from datetime import datetime
+from scipy.integrate import solve_ivp
+import sympy as sym
 
 #function for generating ordinary differential equations
 def rxn_ode(RRX,SSX):
@@ -107,7 +109,7 @@ def box_model_callback():
         
     
 
-    def rxn(Conc,t):        
+    def rxn(t,Conc):        
         #Dictionary for assigning species strings to concentrations 
         conc_dict={}
         for i in range(len(SSX)):
@@ -130,9 +132,20 @@ def box_model_callback():
         for x in range(len(Sdt)):
             Sdt_eval.append(eval(Sdt[x]))
         return Sdt_eval        
-        
-    Conc=odeint(rxn,initial_C0_params,t)
     
+    
+    #analytical jacobain using sympy for solve_ivp
+    total_species=len(SSX)
+    C=sym.symbols('C:'+str(total_species))
+    cdot_ivp=rxn(None,C)
+    J_ivp=sym.Matrix(cdot_ivp).jacobian(C)
+    t_sym = sym.symbols('t')
+    f = sym.lambdify((t_sym, C) , cdot_ivp)
+    J_jb_ivp=sym.lambdify((t_sym, C) , J_ivp)
+    
+#    (Conc,d)=odeint(rxn,initial_C0_params,t,full_output=1,mxordn=100, mxords=1000)
+    Conc_int=solve_ivp(rxn,[time_int[0],time_int[1]],initial_C0_params,t_eval=t,method='LSODA',jac=J_jb_ivp)
+#    print("Number of solve_ivp function evaluations: %d, number of solve_ivp Jacobian evaluations: %d" % (Conc_int.nfev, Conc_int.njev))
     plot_species_names=plot_species_names.split('\n')
     del plot_species_names[0]
     'n'.join(plot_species_names)
@@ -146,16 +159,15 @@ def box_model_callback():
     plot_S_num=[SSX.index(x) for x in plot_S]
 
     #Plotting modelled and exp data 
-
-
-      
     exp=measured_species_entry.get()
     exp_names=exp.split(':')
+    t=Conc_int.t
+    Conc=Conc_int.y
     if exp == 'None':
         fig = plt.figure()
         ax = fig.add_subplot(111)
         for i in range(len(plot_S)):
-            ax.plot(t,Conc[:,plot_S_num[i]],label=plot_S[i])
+            ax.plot(t,Conc[plot_S_num[i]],label=plot_S[i])
             plt.ylabel('[Concentration] (Unit)',fontsize=15)
             plt.xlabel('Time (s)',fontsize=15)
             plt.legend()
@@ -175,19 +187,23 @@ def box_model_callback():
             plt.xlabel('Time (s)',fontsize=15)
             plt.legend()   
     
-    #saving model results and log 
+    #saving model results and log
     response = messagebox.askquestion('Save?','Do you want to save file?')
     if response == 'yes':
         fname=simpledialog.askstring('Filename', 'Please enter filename')
-        np.savetxt(fname+'.txt', np.column_stack((t,Conc)), delimiter="\t", fmt='%s')
+#        np.savetxt(fname+'.txt', np.hstack((t,Conc)), delimiter="\t", fmt='%s')
+        np.savetxt(fname+'.txt', np.hstack((t.reshape(len(t),1),Conc.transpose())), delimiter="\t", fmt='%s')
     plt.show()
 
 def model_exp_callback():
 
     initial_C0_params=initial_C0_params_entry.get()
     initial_C0_params=[float(x) for x in initial_C0_params.split(':')]
+    time_start=float(time_start_entry.get())
+    time_stop=float(step_size_entry.get())
+    steps=int(step_num_entry.get())
 
-    t=np.linspace(float(time_start_entry.get()),float(step_size_entry.get()),int(step_num_entry.get()))
+    t=np.linspace(time_start,time_stop,steps)
     
     rxn_list=rxn_textbox.get("1.0","end-1c")
     rxn_list_split=rxn_list.split('\n')
@@ -199,7 +215,7 @@ def model_exp_callback():
     species_list=species_entry.get()
     SSX=species_list.split(':')   
 
-    def rxn(Conc,t):        
+    def rxn(t,Conc):        
         #Dictionary for assigning species strings to concentrations 
         conc_dict={}
         for i in range(len(SSX)):
@@ -224,9 +240,19 @@ def model_exp_callback():
         Sdt_eval=[]*len(Sdt)
         for x in range(len(Sdt)):
             Sdt_eval.append(eval(Sdt[x]))
-        return Sdt_eval        
+        return Sdt_eval       
+    
+    #analytical jacobain using sympy for solve_ivp
+    total_species=len(SSX)
+    C=sym.symbols('C:'+str(total_species))
+    cdot_ivp=rxn(None,C)
+    J_ivp=sym.Matrix(cdot_ivp).jacobian(C)
+    t_sym = sym.symbols('t')
+    f = sym.lambdify((t_sym, C) , cdot_ivp)
+    J_jb_ivp=sym.lambdify((t_sym, C) , J_ivp)
         
-    Conc=odeint(rxn,initial_C0_params,t)
+    Conc_int=solve_ivp(rxn,[time_start,time_stop],initial_C0_params,t_eval=t,method='LSODA',jac=J_jb_ivp)
+#    print("Number of solve_ivp function evaluations: %d, number of solve_ivp Jacobian evaluations: %d" % (Conc_int.nfev, Conc_int.njev))
     
     plot_S=plot_species_entry.get()
     plot_S=plot_S.split(':')
@@ -235,11 +261,13 @@ def model_exp_callback():
     #Plotting modelled and exp data       
     exp=measured_species_entry.get()
     exp_names=exp.split(':')
+    t=Conc_int.t
+    Conc=Conc_int.y
     if exp == 'None':
         fig = plt.figure()
         ax = fig.add_subplot(111)
         for i in range(len(plot_S)):
-            ax.plot(t,Conc[:,plot_S_num[i]],label=plot_S[i])
+            ax.plot(t,Conc[plot_S_num[i]],label=plot_S[i])
             plt.ylabel('[Concentration] (Unit)',fontsize=15)
             plt.xlabel('Time (s)',fontsize=15)
             plt.legend()
@@ -249,7 +277,7 @@ def model_exp_callback():
         fig = plt.figure()
         ax = fig.add_subplot(111)
         for i in range(len(plot_S)):
-            ax.plot(t,Conc[:,plot_S_num[i]],label=plot_S[i])
+            ax.plot(t,Conc[plot_S_num[i]],label=plot_S[i])
             plt.ylabel('[Concentration] (Unit)',fontsize=15)
             plt.xlabel('Time (s)',fontsize=15)
             plt.legend()
@@ -293,6 +321,8 @@ def fit_callback():
     
     #Experimental time measurement
     t=data[:,0]
+    time_start=t[0]
+    time_stop=t[len(t)-1]
 
     #dictionatory for measured signals
     sig_dic={}    
@@ -378,7 +408,7 @@ def fit_callback():
     
     def rxn_fit(params,t,sig_dic):      
         
-        def rxn(Conc,t):  
+        def rxn(t,Conc):  
             
             #Relating params values to rate coefficient labels in the model   
             params_dict={}
@@ -405,12 +435,22 @@ def fit_callback():
         for p in range(len(species_names)):
             conc=params[species_names[p]]
             C0.append(conc)
-            
-        Conc=odeint(rxn,C0,t)
-    
+               
+        #analytical jacobain using sympy for solve_ivp
+        total_species=len(SSX)
+        C=sym.symbols('C:'+str(total_species))
+        cdot_ivp=rxn(None,C)
+        J_ivp=sym.Matrix(cdot_ivp).jacobian(C)
+        t_sym = sym.symbols('t')
+        f = sym.lambdify((t_sym, C) , cdot_ivp)
+        J_jb_ivp=sym.lambdify((t_sym, C) , J_ivp)
+        
+        Conc=solve_ivp(rxn,[time_start,time_stop],C0,t_eval=t,method='LSODA',jac=J_jb_ivp)
+#        print("Number of solve_ivp function evaluations: %d, number of solve_ivp Jacobian evaluations: %d" % (Conc.nfev, Conc.njev))
+        Conc=Conc.y
         residual=[]*len(S_m)
         for i in range(len(S_m)):
-            residual.append(Conc[:,SSX.index(S_m[i])]-sig_dic[S_m[i]])
+            residual.append(Conc[SSX.index(S_m[i])]-sig_dic[S_m[i]])
         return residual
     
 
@@ -419,7 +459,7 @@ def fit_callback():
     print(fit_report(out.params)) 
 
     #Modelled concentration with optimized parameters
-    def rxn_final(Conc,t):  
+    def rxn_final(t,Conc):  
         
         #Relating Conc values to S labels in the model        
         conc_dict={}
@@ -449,8 +489,19 @@ def fit_callback():
 
     t1=np.linspace(np.min(t),np.max(t),np.int(step_num_entry.get())) 
     
-    Conc=odeint(rxn_final,C0,t1)    
-
+    #analytical jacobain using sympy for solve_ivp
+    total_species=len(SSX)
+    C=sym.symbols('C:'+str(total_species))
+    cdot_ivp=rxn_final(None,C)
+    J_ivp=sym.Matrix(cdot_ivp).jacobian(C)
+    t_sym = sym.symbols('t')
+    f = sym.lambdify((t_sym, C) , cdot_ivp)
+    J_jb_ivp=sym.lambdify((t_sym, C) , J_ivp)
+#    Conc=odeint(rxn_final,C0,t1)   
+    Conc=solve_ivp(rxn_final,[np.min(t),np.max(t)],C0,t_eval=t1,method='LSODA',jac=J_jb_ivp)
+#    print("Number of solve_ivp function evaluations: %d, number of solve_ivp Jacobian evaluations: %d" % (Conc.nfev, Conc.njev))
+    
+    Conc=Conc.y
     #Plotting modelled and exp data       
     plot_S=plot_species_entry.get()
     plot_S=plot_S.split(':')
@@ -459,7 +510,7 @@ def fit_callback():
     fig = plt.figure()
     ax = fig.add_subplot(111)
     for i in range(len(plot_S)):
-        ax.plot(t1,Conc[:,plot_S_num[i]],label='Fit Model '+plot_S[i])
+        ax.plot(t1,Conc[plot_S_num[i]],label='Fit Model '+plot_S[i])
         plt.ylabel('[Concentration] (Unit)',fontsize=15)
         plt.xlabel('Time (s)',fontsize=15)
         plt.legend()
